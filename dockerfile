@@ -1,37 +1,41 @@
-# Dockerfile pour Fly.io
-FROM rust:1.71-slim-bullseye as builder
+# -----------------------------
+# Stage 1: Build Rust application
+# -----------------------------
+FROM rust:1.86-slim-bullseye AS builder
 
-# Installer les dépendances nécessaires
+# Installer les dépendances pour Rust (openssl)
 RUN apt-get update && apt-get install -y \
-    libssl-dev \
     pkg-config \
+    libssl-dev \
     ffmpeg \
     python3-pip \
-    && pip3 install yt-dlp \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 COPY . .
 
-# Compiler le binaire en release
+# Build release
 RUN cargo build --release
 
-# Étape finale
-FROM debian:bullseye-slim
+# -----------------------------
+# Stage 2: Runtime minimal
+# -----------------------------
+FROM debian:bookworm-slim
 
-# Installer runtime essentials
+# Installer runtime system dependencies
 RUN apt-get update && apt-get install -y \
-    libssl3 \
     ffmpeg \
     python3-pip \
-    && pip3 install yt-dlp \
+    libssl3 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /usr/local/bin
+# Installer yt-dlp globalement
+RUN python3 -m pip install --no-cache-dir yt-dlp
+
+WORKDIR /usr/src/app
+# Copier le binaire Rust compilé
 COPY --from=builder /usr/src/app/target/release/rust-audio-stream .
 
-# Port exposé pour Fly.io
-EXPOSE 8080
-
-# Commande par défaut
+EXPOSE 3000
 CMD ["./rust-audio-stream"]
