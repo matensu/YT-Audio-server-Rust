@@ -272,7 +272,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/spotify/search", post(spotify_search))
         .layer(cors.clone());
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    let port = std::env::var("PORT")
+    .unwrap_or_else(|_| "3000".to_string())
+    .parse::<u16>()
+    .unwrap_or(3000);
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+
     info!("Listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
