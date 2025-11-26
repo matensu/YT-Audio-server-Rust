@@ -1,25 +1,37 @@
-# Étape 1 : builder
-FROM rust:1.77 as builder
+# Dockerfile pour Fly.io
+FROM rust:1.71-slim-bullseye as builder
+
+# Installer les dépendances nécessaires
+RUN apt-get update && apt-get install -y \
+    libssl-dev \
+    pkg-config \
+    ffmpeg \
+    python3-pip \
+    && pip3 install yt-dlp \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
+COPY . .
 
-# Copier les fichiers Cargo
-COPY Cargo.toml Cargo.lock ./
-COPY src ./src
-
-# Compiler en release
+# Compiler le binaire en release
 RUN cargo build --release
 
-# Étape 2 : image minimale pour exécution
+# Étape finale
 FROM debian:bullseye-slim
 
-WORKDIR /usr/src/app
+# Installer runtime essentials
+RUN apt-get update && apt-get install -y \
+    libssl3 \
+    ffmpeg \
+    python3-pip \
+    && pip3 install yt-dlp \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copier le binaire depuis le builder
-COPY --from=builder /usr/src/app/target/release/myapp ./myapp
+WORKDIR /usr/local/bin
+COPY --from=builder /usr/src/app/target/release/rust-audio-stream .
 
-# Exposer le port attendu par Fly.io
+# Port exposé pour Fly.io
 EXPOSE 8080
 
-# Lancer le binaire
-CMD ["./myapp"]
+# Commande par défaut
+CMD ["./rust-audio-stream"]
