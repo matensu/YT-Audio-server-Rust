@@ -228,7 +228,7 @@ async fn search_spotify_tracks(
         .await?;
 
     let json: Value = res.json().await?;
- let items = json["tracks"]["items"]
+let items = json["tracks"]["items"]
     .as_array()
     .map(|arr| arr.to_owned())  // clone des données pour éviter la référence temporaire
     .unwrap_or_default();
