@@ -113,8 +113,11 @@ async fn stream_youtube(Path(youtube_id): Path<String>)
     let mut headers = HeaderMap::new();
     headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("audio/mpeg"));
     headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
-
+    headers.insert(header::ACCEPT_RANGES, HeaderValue::from_static("bytes"));
+    headers.insert(header::TRANSFER_ENCODING, HeaderValue::from_static("chunked"));
+    
     Ok((headers, Body::from_stream(stream)))
+
 }
 
 /// ======= YOUTUBE SEARCH =======
